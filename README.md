@@ -47,6 +47,11 @@ Phishing campaigns exploit:
 
 ## Installation
 
+Clone It.
+
+```bash
+git clone https://github.com/zrnge/Mosqito.git
+```
 ### Requirements
 
 - Python 3.9+
