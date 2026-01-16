@@ -92,26 +92,26 @@ This is useful for:
 
 Generate all plausible masquerading variants using default settings:
 ```bash
-python domain_masquerade.py google.com
+python mosqito.py google.com
 ```
 
 ### Restrict to One Character Change
 
 Generate only the most realistic impersonation domains:
 ```bash
-python domain_masquerade.py google.com --max-changes 1
+python mosqito.py google.com --max-changes 1
 ```
 
 ### Include Punycode Output
 
 Generate variants and show their DNS-compatible encodings:
 ```bash
-python domain_masquerade.py google.com --punycode
+python mosqito.py google.com --punycode
 ```
 
 Combine Options
 ```bash
-python domain_masquerade.py google.com --max-changes 1 --punycode
+python mosqito.py google.com --max-changes 1 --punycode
 ```
 
 ---
