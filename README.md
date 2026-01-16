@@ -54,4 +54,62 @@ Phishing campaigns exploit:
 
 ```bash
 pip install idna
+```
+### Usage
+| Argument | Required | Description                                                                       |
+| -------- | -------- | --------------------------------------------------------------------------------- |
+|  domain  |   Yes    | Target domain to analyze. Must be in the format `label.tld` (e.g., `google.com`). |
 
+| Option     | Long Form             | Description                                                                                                              | Default  |
+| ---------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------- |
+| `-m <int>` | `--max-changes <int>` | Maximum number of character substitutions allowed per domain label. Limits combinatorial explosion and controls realism. | `2`      |
+| *(none)*   | `--punycode`          | Display the IDNA / Punycode representation for each generated domain variant.                                            | Disabled |
+
+```bash
+--max-changes 1   # Very strict, high realism
+--max-changes 2   # Balanced (default)
+--max-changes 3   # Broad coverage (use with caution)
+```
+```bash
+--punycode
+```
+When enabled, Mosqito outputs the ASCII-compatible encoding
+used by DNS and browsers for Unicode domains.
+
+Example:
+``
+gοοgle.com
+  -> xn--ggle-55da.com
+``
+
+This is useful for:
+
+- DNS monitoring
+- Certificate Transparency analysis
+- Browser behavior validation
+
+### Basic Execution
+
+Generate all plausible masquerading variants using default settings:
+```bash
+python domain_masquerade.py google.com
+```
+
+### Restrict to One Character Change
+
+Generate only the most realistic impersonation domains:
+```bash
+python domain_masquerade.py google.com --max-changes 1
+```
+
+### Include Punycode Output
+
+Generate variants and show their DNS-compatible encodings:
+```bash
+python domain_masquerade.py google.com --punycode
+```
+
+Combine Options
+```bash
+python domain_masquerade.py google.com --max-changes 1 --punycode
+```
