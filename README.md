@@ -113,3 +113,15 @@ Combine Options
 ```bash
 python domain_masquerade.py google.com --max-changes 1 --punycode
 ```
+
+---
+
+## Disclaimer
+
+Mosqito is intended **solely for defensive cybersecurity research, education, and detection engineering**.
+
+It must **not** be used for phishing, impersonation, fraud, or any malicious activity.
+The authors assume no responsibility for misuse of this tool.
+
+Use responsibly and in compliance with applicable laws and policies.
+
