@@ -1,6 +1,6 @@
 # Mosqito – Domain Masquerading & Homoglyph Generator 🦟
 
-<img src="mosqito_logo.png" alt="drawing" width="400"/>
+<img src="mosqito_logo.png" alt="drawing" style="width:200px;"/>
 
 Mosqito is a cybersecurity research and defensive tool designed to generate visually confusable domain variants. It helps security teams, threat analysts, and SOC engineers detect potential phishing, impersonation, and brand abuse attempts by enumerating domains that exploit Unicode homoglyphs, diacritics, and digit-letter substitutions.
 
