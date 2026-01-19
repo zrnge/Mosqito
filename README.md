@@ -4,6 +4,7 @@
 ![Security](https://img.shields.io/badge/use-defensive%20security-orange.svg)
 ![Status](https://img.shields.io/badge/status-active-success.svg)
 ![Contributions](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)
+
 <img src="mosqito_logo.png" alt="drawing" style="width:400px; place-items: center;"/>
 
 **Mosqito is a defensive cybersecurity tool for detecting Unicode homoglyph and IDN-based domain impersonation and phishing risks.**
