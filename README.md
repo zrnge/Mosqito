@@ -50,6 +50,7 @@ cd Mosqito
 ```
 ---
 Mosqito requires Python 3.9 or higher.
+
 No additional dependencies are required.
 ---
 # Usage
