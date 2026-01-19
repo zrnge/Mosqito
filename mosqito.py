@@ -1,27 +1,46 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+Mosqito - Unicode Homoglyph Domain Masquerading Analyzer
+Author: https://github.com/zrnge
+License: MIT
+Purpose: Defensive detection of Unicode-based domain impersonation
+"""
 
 import argparse
 import itertools
-import idna
-from typing import List, Dict
+import sys
+import unicodedata
+from typing import Dict, List
+
+# ASCII Banner
+
+BANNER = r"""
+    __  ___              _ __
+   /  |/  /___  _____   (_) /_____ _
+  / /|_/ / __ \/ ___/  / / __/ __ `/
+ / /  / / /_/ (__  )  / / /_/ /_/ /
+/_/  /_/\____/____/  /_/\__/\__,_/
+
+ Mosqito - Domain Masquerading Analyzer
+"""
 
 
-# ASCII BANNER
+# Terminal Colors
 
-def print_banner():
-    banner = r"""
-              \  /
-               \/
-        ==>>== () ==<<==
-               /\
-              /  \
+class Color:
+    GREEN = "\033[92m"
+    ORANGE = "\033[93m"
+    RESET = "\033[0m"
 
-        M O S Q I T O
-   Domain Masquerading Analyzer
-    """
-    print(banner)
+def colorize(text: str, suspicious: bool) -> str:
+    if suspicious:
+        return f"{Color.ORANGE}{text}{Color.RESET}"
+    return f"{Color.GREEN}{text}{Color.RESET}"
 
-# HOMOGLYPH DEFINITIONS
+
+# Enriched Homoglyph Mapping
 
 HOMOGLYPHS: Dict[str, List[str]] = {
     "a": ["а", "ɑ", "α", "à", "á", "â", "ä", "ã", "å"],
@@ -48,106 +67,167 @@ HOMOGLYPHS: Dict[str, List[str]] = {
     "w": ["ѡ"],
     "x": ["х", "χ"],
     "y": ["у", "γ"],
-    "z": ["ᴢ", "ż"]
+    "z": ["ᴢ", "ż"],
 }
 
+REVERSE_HOMOGLYPHS = {
+    glyph: ascii_char
+    for ascii_char, glyphs in HOMOGLYPHS.items()
+    for glyph in glyphs
+}
 
-# CORE LOGIC
+# -----------------------------
+# Utility Functions
+# -----------------------------
+def is_ascii(s: str) -> bool:
+    return all(ord(c) < 128 for c in s)
 
-def enrich_char(c: str) -> List[str]:
-    """Return all visual variants for a character."""
-    return [c] + HOMOGLYPHS.get(c.lower(), [])
+def to_punycode(domain: str):
+    try:
+        return domain.encode("idna").decode()
+    except Exception:
+        return None
 
+def normalize_visual(domain: str) -> str:
+    return "".join(REVERSE_HOMOGLYPHS.get(c, c) for c in domain)
 
-def generate_variants(label: str, max_changes: int) -> set:
-    """Generate domain label variants with controlled substitutions."""
-    pools = [enrich_char(c) for c in label]
-    results = set()
-
-    for combo in itertools.product(*pools):
-        diff = sum(1 for i in range(len(label)) if combo[i] != label[i])
-        if 0 < diff <= max_changes:
-            results.add("".join(combo))
-
-    return results
-
-
-def risk_score(original: str, variant: str) -> int:
-    """Heuristic risk score based on visual deception."""
+def calculate_risk(domain: str) -> int:
     score = 0
-    for o, v in zip(original, variant):
-        if o != v:
-            if ord(v) > 127:
-                score += 3
-            elif v.isdigit():
-                score += 2
-            else:
-                score += 1
+    for c in domain:
+        if ord(c) > 127:
+            score += 3
+        if c in {"0", "1", "|"}:
+            score += 2
+        if c in REVERSE_HOMOGLYPHS:
+            score += 3
     return score
 
 
-def to_punycode(domain: str) -> str:
-    """Convert Unicode domain to Punycode (IDNA)."""
-    try:
-        return idna.encode(domain).decode()
-    except idna.IDNAError:
-        return None
+# Variant Generation
 
-# MAIN ENTRY POINT
+def generate_variants(label: str, max_changes: int):
+    positions = [
+        (i, HOMOGLYPHS[c])
+        for i, c in enumerate(label)
+        if c in HOMOGLYPHS
+    ]
+
+    variants = set()
+
+    for r in range(1, max_changes + 1):
+        for combo in itertools.combinations(positions, r):
+            indexes, replacements = zip(*combo)
+            for product in itertools.product(*replacements):
+                chars = list(label)
+                for idx, rep in zip(indexes, product):
+                    chars[idx] = rep
+                variants.add("".join(chars))
+
+    return variants
+
+
+# Masquerade Detection
+
+def check_domain(domain: str, compare: str = None):
+    findings = []
+    risk = 0
+
+    if not is_ascii(domain):
+        findings.append("Contains non-ASCII Unicode characters")
+        risk += 3
+
+    normalized = unicodedata.normalize("NFKC", domain)
+    if normalized != domain:
+        findings.append("Unicode normalization alters the domain")
+        risk += 2
+
+    visual = normalize_visual(domain)
+    if visual != domain:
+        findings.append(f"Visually resolves to: {visual}")
+        risk += 4
+
+    puny = to_punycode(domain)
+    if puny and puny.startswith("xn--"):
+        findings.append(f"IDN punycode detected: {puny}")
+        risk += 2
+
+    if compare and visual == compare:
+        findings.append(f"Visually impersonates: {compare}")
+        risk += 4
+
+    status = "SUSPICIOUS" if risk >= 5 else "CLEAN"
+
+    return {
+        "domain": domain,
+        "status": status,
+        "risk": risk,
+        "findings": findings,
+    }
+
+
+# CLI
 
 def main():
-    print_banner()
-
     parser = argparse.ArgumentParser(
-        description="Mosqito: Advanced Unicode domain masquerading generator (defensive)"
+        description="Mosqito - Unicode Homoglyph Domain Masquerading Analyzer"
     )
 
-    parser.add_argument(
-        "domain",
-        help="Target domain (e.g., google.com)"
-    )
-
-    parser.add_argument(
-        "-m", "--max-changes",
-        type=int,
-        default=2,
-        help="Maximum homoglyph substitutions per label (default: 2)"
-    )
-
-    parser.add_argument(
-        "--punycode",
-        action="store_true",
-        help="Include Punycode (IDNA) output"
-    )
+    parser.add_argument("domain", nargs="?", help="Target domain (e.g. google.com)")
+    parser.add_argument("-m", "--max-changes", type=int, default=2)
+    parser.add_argument("--punycode", action="store_true")
+    parser.add_argument("--check", action="store_true")
+    parser.add_argument("--compare", help="Legitimate domain to compare against")
 
     args = parser.parse_args()
 
+    if not args.domain:
+        parser.print_help()
+        sys.exit(1)
+
+    print(BANNER)
+
+    
+    # Detection Mode
+    
+    if args.check:
+        result = check_domain(args.domain, args.compare)
+        suspicious = result["status"] == "SUSPICIOUS"
+
+        print(f"Domain: {result['domain']}")
+        print(f"Status: {colorize(result['status'], suspicious)}")
+        print(f"Risk Score: {result['risk']}/10\n")
+
+        if result["findings"]:
+            print("Findings:")
+            for f in result["findings"]:
+                print(f"- {f}")
+        else:
+            print("No suspicious indicators detected.")
+        return
+
+    
+    # Generation Mode
+   
     try:
         label, tld = args.domain.split(".", 1)
     except ValueError:
-        raise SystemExit("Error: Invalid domain format (expected: label.tld)")
+        print("Error: Invalid domain format (expected: label.tld)")
+        sys.exit(1)
 
     variants = generate_variants(label, args.max_changes)
-    sorted_variants = sorted(
-        variants,
-        key=lambda x: risk_score(label, x),
-        reverse=True
-    )
 
-    print(f"Original: {args.domain}")
-    print(f"Generated variants: {len(sorted_variants)}\n")
+    for v in sorted(variants):
+        full = f"{v}.{tld}"
+        risk = calculate_risk(full)
+        suspicious = risk >= 5
 
-    for v in sorted_variants:
-        domain = f"{v}.{tld}"
-        score = risk_score(label, v)
-
-        print(f"{domain}  [risk={score}]")
+        line = f"{full}  [risk={risk}]"
+        print(colorize(line, suspicious))
 
         if args.punycode:
-            pc = to_punycode(domain)
-            if pc:
-                print(f"  -> {pc}")
-
+            puny = to_punycode(full)
+            if puny and puny != full:
+                print(f"  -> {puny}")
 
 if __name__ == "__main__":
     main()
