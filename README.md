@@ -48,8 +48,59 @@ Clone the repository:
 git clone https://github.com/zrnge/Mosqito.git
 cd Mosqito
 ```
+---
+Mosqito requires Python 3.9 or higher.
+No additional dependencies are required.
+---
+# Usage
+## General Syntax
+```bash
+python mosqito.py <domain> [options]
+```
+---
 
-## Disclaimer
+## Options
+| Option                    | Description                                                | Default  |
+| ------------------------- | ---------------------------------------------------------- | -------- |
+| `-m, --max-changes <int>` | Maximum homoglyph substitutions per label                  | `2`      |
+| `--punycode`              | Display IDNA / Punycode representation                     | Disabled |
+| `--check`                 | Analyze a domain for masquerading indicators               | Disabled |
+| `--compare <domain>`      | Legitimate domain to compare against (used with `--check`) | None     |
+
+---
+## Examples
+### Generate Homoglyph Variants
+```bash
+python mosqito.py google.com
+```
+Generates visually similar Unicode-based variants of google.com.
+---
+### Limit Substitutions (Higher Realism)
+```bash
+python mosqito.py google.com --max-changes 1
+```
+Restricts output to the most realistic impersonation domains.
+---
+### Show Punycode Representation
+```bash
+python mosqito.py google.com --punycode
+```
+Displays the IDN / ASCII-compatible encoding used by DNS and browsers.
+---
+### Masquerade Detection Mode
+```bash
+python mosqito.py --check gοοgle.com
+```
+Check whether a domain is likely impersonating another.
+---
+
+### Compare Against a Legitimate Domain
+```bash
+python mosqito.py --check gοοgle.com --compare google.com
+```
+This flags high-confidence visual impersonation.
+
+# Disclaimer
 
 Mosqito is intended **solely for defensive cybersecurity research, education, and detection engineering**.
 
